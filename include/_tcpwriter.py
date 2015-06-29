@@ -23,10 +23,10 @@ class TcpWriter(BaseWriter):
         self.host = host
         self.port = int(port)
 
-        self.sock = self.connect(host, port)
+        self.sock = self.connect()
 
     def connect(self):
-        self.sock = socket.create_connections((self.host, self.port))
+        self.sock = socket.create_connection((self.host, self.port))
         return self.sock
 
     def disconnect(self):
@@ -58,4 +58,4 @@ class TcpWriter(BaseWriter):
 
     
     def __repr__(self):
-        return "TcpWriter(host=%s, port=%s") % (self.host, self.port)
+        return "TcpWriter(host=%s, port=%s)" % (self.host, self.port)
