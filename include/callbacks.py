@@ -23,8 +23,8 @@ def configure_callback(config):
 #if "$WRITER" eq "socket"
         elif key == 'udp':
             WRITERS.append(UdpWriter($FORMAT_formatter, *node.values))
-#        elif key == 'tcp':
-#            WRITERS.append(TcpWriter($FORMAT_formatter, *node.values))
+        elif key == 'tcp':
+            WRITERS.append(TcpWriter($FORMAT_formatter, *node.values))
 #        elif key == 'unix':
 #            WRITERS.append(UnixWriter($FORMAT_formatter, *node.values))
 #endif

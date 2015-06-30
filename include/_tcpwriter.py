@@ -26,8 +26,10 @@ class TcpWriter(BaseWriter):
         self.sock = self.connect()
 
     def connect(self):
-        self.sock = socket.create_connection((self.host, self.port))
-        return self.sock
+        try:
+            self.sock = socket.create_connection((self.host, self.port))
+        except socket.error:
+            self.sock = None
 
     def disconnect(self):
         if self.sock:
@@ -40,6 +42,10 @@ class TcpWriter(BaseWriter):
     def flush(self, values):
 
         message = self.formatter(values)
+
+        if self.sock == None:
+            self.connect()
+            return
 
         try:
             collectd.debug("%s.TcpWriter.flush: %s:%s %s" % ('$NAME', self.host, self.port, message))

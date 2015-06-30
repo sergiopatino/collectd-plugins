@@ -406,8 +406,10 @@ class TcpWriter(BaseWriter):
         self.sock = self.connect()
 
     def connect(self):
-        self.sock = socket.create_connection((self.host, self.port))
-        return self.sock
+        try:
+            self.sock = socket.create_connection((self.host, self.port))
+        except socket.error:
+            self.sock = None
 
     def disconnect(self):
         if self.sock:
@@ -420,6 +422,10 @@ class TcpWriter(BaseWriter):
     def flush(self, values):
 
         message = self.formatter(values)
+
+        if self.sock == None:
+            self.connect()
+            return
 
         try:
             collectd.debug("%s.TcpWriter.flush: %s:%s %s" % ('write_socket_keyval', self.host, self.port, message))
@@ -464,6 +470,8 @@ def configure_callback(config):
             TYPES_DICT.update(read_typesdb(node.values[0]))
         elif key == 'udp':
             WRITERS.append(UdpWriter(keyval_formatter, *node.values))
+        elif key == 'tcp':
+            WRITERS.append(TcpWriter(keyval_formatter, *node.values))
         else:
             collectd.notice("%s configuration error: unknown key %s" % ('write_socket_keyval', key))
 

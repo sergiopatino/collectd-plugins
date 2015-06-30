@@ -45,10 +45,9 @@ LoadPlugin unixsock
   LogTraces true
   Interactive false
 
-  # We expect to run this from the same directory
-  # where the 'write_network_*.py' file lives.
+  # Relative to test/
   #
-  ModulePath "."
+  ModulePath ".."
 
   Import "write_socket_keyval"
   <Module write_socket_keyval>

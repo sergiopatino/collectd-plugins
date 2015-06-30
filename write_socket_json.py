@@ -209,7 +209,7 @@ def read_typesdb(path):
 import json
 
 def json_formatter(values_dict):
-    return json.dumps(values_dict)
+    return '%s\n' % (json.dumps(values_dict))
 
 
 
@@ -395,8 +395,10 @@ class TcpWriter(BaseWriter):
         self.sock = self.connect()
 
     def connect(self):
-        self.sock = socket.create_connection((self.host, self.port))
-        return self.sock
+        try:
+            self.sock = socket.create_connection((self.host, self.port))
+        except socket.error:
+            self.sock = None
 
     def disconnect(self):
         if self.sock:
@@ -409,6 +411,10 @@ class TcpWriter(BaseWriter):
     def flush(self, values):
 
         message = self.formatter(values)
+
+        if self.sock == None:
+            self.connect()
+            return
 
         try:
             collectd.debug("%s.TcpWriter.flush: %s:%s %s" % ('write_socket_json', self.host, self.port, message))
@@ -453,6 +459,8 @@ def configure_callback(config):
             TYPES_DICT.update(read_typesdb(node.values[0]))
         elif key == 'udp':
             WRITERS.append(UdpWriter(json_formatter, *node.values))
+        elif key == 'tcp':
+            WRITERS.append(TcpWriter(json_formatter, *node.values))
         else:
             collectd.notice("%s configuration error: unknown key %s" % ('write_socket_json', key))
 
