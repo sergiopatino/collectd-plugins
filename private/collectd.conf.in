@@ -1,0 +1,69 @@
+#
+# /opt/collectd-VERSION/etc/collectd.conf
+# 
+# For testing 'write_socket_*.py'
+#
+
+# Reduce Interval for easier testing.
+#
+Interval     5
+
+#
+Hostname myhostname
+FQDNLookup False
+
+# Log to stdout. Collectd has been compield with '--enable-debug'
+# do 'LogLevel debug' actually works.
+#
+LoadPlugin logfile
+<Plugin logfile>
+  LogLevel debug
+  File "/var/log/collectd-VERSION.log"
+  Timestamp true
+  PrintSeverity true
+</Plugin>
+
+# Only collect the (multi-value) system load for
+# testing.
+#
+LoadPlugin load
+
+LoadPlugin unixsock
+<Plugin unixsock>
+    SocketFile "/opt/collectd-VERSION/var/run/collectd-unixsock"
+    SocketGroup "root"
+    SocketPerms "0770"
+    DeleteSocket true
+</Plugin>
+
+<LoadPlugin python>
+  Globals true
+</LoadPlugin>
+
+<Plugin python>
+  # Enable Python stack trace in Collectd logs
+  LogTraces true
+  Interactive false
+
+  # Relative to test/
+  #
+  ModulePath ".."
+
+  Import "write_socket_keyval"
+  <Module write_socket_keyval>
+      TypesDB "/opt/collectd-VERSION/share/collectd/types.db"
+      UDP     "localhost"   "50011"
+      UDP     "239.239.1.1" "50012" "0"
+      TCP     "localhost"   "50013"
+  </Module>
+
+  Import "write_socket_json"
+  <Module write_socket_json>
+      TypesDB "/opt/collectd-VERSION/share/collectd/types.db"
+      UDP     "localhost"   "50021"
+      UDP     "239.239.2.1" "50022" "0"
+      TCP     "localhost"   "50023"
+  </Module>
+
+</Plugin>
+
