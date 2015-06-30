@@ -1,3 +1,7 @@
+write_socket_keyval.py
+write_socket_json.py
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

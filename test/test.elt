@@ -1,0 +1,99 @@
+#!/usr/bin/expect-lite
+
+*EXP_INFO
+
+; Terminate all collectd processes
+;
+>pkill collectd
+>pkill -9 collectd
+
+
+; Cleanup log files
+>rm -fv /var/log/collectd*.log
+
+
+; Test collectd configuration
+>/opt/collectd-$VERSION/sbin/collectd -t
+>echo $?
+<<0
+
+
+; Start collectd
+>/opt/collectd-$VERSION/sbin/collectd
+>ps -ef | grep collectd
+<<collectd-$VERSION/sbin/collectd
+>sleep 5
+
+
+; Is collectd operating
+>/opt/collectd-$VERSION/bin/collectdctl getval myhostname/load/load
+<<shortterm
+<<midterm
+<<longterm
+
+
+; Check for errors or warnings
+>grep -c '\[notice' /var/log/collectd-$VERSION.log
+<<0
+>grep -c '\[warn' /var/log/collectd-$VERSION.log
+<<0
+>grep -c '\[err' /var/log/collectd-$VERSION.log
+<<0
+
+@10
+
+; Receive UDP unicast keyval
+>timeout 7s socat -u -T 10 udp4-listen:50011 stdout
+<time=[0-9]{10}\.[0-9]{3} host="myhostname" plugin="load" plugin_instance="" type="load" type_instance="" interval=5 value=[0-9].[0-9]{6} dsname="shortterm" dstype="gauge" dsmin=0.0 dsmax=5000.0
+<time=[0-9]{10}\.[0-9]{3} host="myhostname" plugin="load" plugin_instance="" type="load" type_instance="" interval=5 value=[0-9].[0-9]{6} dsname="midterm" dstype="gauge" dsmin=0.0 dsmax=5000.0
+<time=[0-9]{10}\.[0-9]{3} host="myhostname" plugin="load" plugin_instance="" type="load" type_instance="" interval=5 value=[0-9].[0-9]{6} dsname="longterm" dstype="gauge" dsmin=0.0 dsmax=5000.0
+
+
+; Receive UDP unicast JSON
+>timeout 7s socat -u -T 10 udp4-listen:50021 stdout
+<{"dsmin": \[0.0, 0.0, 0.0\], 
+<"dstype": \["gauge", "gauge", "gauge"\], 
+<"host": "myhostname", 
+<"plugin_instance": "", 
+<"plugin": "load", 
+<"interval": 5.0, 
+<"dsname": \["shortterm", "midterm", "longterm"\], 
+<"dsmax": \[5000.0, 5000.0, 5000.0\], 
+<"values": \[.+, .+, .+\], 
+<"time": [0-9]{8,12}.[0-9]{3,12}, 
+<"type_instance": "", 
+<"type": "load"}
+
+
+; Receive UDP multicast keyval
+>timeout 7s socat -u -T 10 udp4-recvfrom:50012,ip-add-membership=239.239.1.1:eth1 stdout
+<time=[0-9]{10}\.[0-9]{3} host="myhostname" plugin="load" plugin_instance="" type="load" type_instance="" interval=5 value=[0-9].[0-9]{6} dsname="shortterm" dstype="gauge" dsmin=0.0 dsmax=5000.0
+<time=[0-9]{10}\.[0-9]{3} host="myhostname" plugin="load" plugin_instance="" type="load" type_instance="" interval=5 value=[0-9].[0-9]{6} dsname="midterm" dstype="gauge" dsmin=0.0 dsmax=5000.0
+<time=[0-9]{10}\.[0-9]{3} host="myhostname" plugin="load" plugin_instance="" type="load" type_instance="" interval=5 value=[0-9].[0-9]{6} dsname="longterm" dstype="gauge" dsmin=0.0 dsmax=5000.0
+
+
+; Receive UDP multicast json
+>timeout 7s socat -u -T 10 udp4-recvfrom:50022,ip-add-membership=239.239.2.1:eth1 stdout
+<{"dsmin": \[0.0, 0.0, 0.0\], 
+<"dstype": \["gauge", "gauge", "gauge"\], 
+<"host": "myhostname", 
+<"plugin_instance": "", 
+<"plugin": "load", 
+<"interval": 5.0, 
+<"dsname": \["shortterm", "midterm", "longterm"\], 
+<"dsmax": \[5000.0, 5000.0, 5000.0\], 
+<"values": \[.+, .+, .+\], 
+<"time": [0-9]{8,12}.[0-9]{3,12}, 
+<"type_instance": "", 
+<"type": "load"}
+
+
+; Check multicast TTL
+;
+>tcpdump -v -i eth1 -n port 50012
+<<ttl 0
+<<239.239.1.1.50012
+
+>tcpdump -v -i eth1 -n port 50022
+<<ttl 0
+<<239.239.2.1.50022

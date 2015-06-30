@@ -7,12 +7,14 @@
 #
 # Markus Juenemann
 
+THISDIR=`pwd`
 
-yum -y install http://mirror.rackcentral.com.au/epel/6/i386/epel-release-6-8.noarch.rpm
-yum -y install vim-enhanced git wget bzip2 tar python-devel perl-devel ccache ipython python-argparse pylint gitflow man expect
-yum -y groupinstall 'Development tools'
-yum -y install http://downloads.sourceforge.net/project/expect-lite/expect-lite/expect-lite_4.8.0/expect-lite-4.8.0.noarch.rpm
-yum -y install http://www-users.york.ac.uk/~dm26/filepp/filepp-1.8.0-1.noarch.rpm
+yum -y install http://mirror.rackcentral.com.au/epel/6/i386/epel-release-6-8.noarch.rpm 
+yum -y install vim-enhanced git wget bzip2 tar python-devel perl-devel ccache \
+               ipython python-argparse pylint gitflow man expect socat tcpdump
+yum -y groupinstall 'Development tools' 
+yum -y localinstall expect-lite-4.8.1.noarch.rpm 
+yum -y localinstall filepp-1.8.1-1.noarch.rpm 
 yum -y update
 
 [ -f /usr/local/bin/gcc ] || ln -s `which ccache` /usr/local/bin/gcc
@@ -41,9 +43,11 @@ for v in 5.4.2; do
     cd collectd-$v
     ./configure --prefix=/opt/collectd-$v --with-python --config-cache --enable-debug
     make install
-    echo "Include \"/usr/local/src/collectd-write_json/tests/test-write_json.conf\"" >> /opt/collectd-$v/etc/collectd.conf
-    # TODO cat EOF custom collectd.conf without syslog, STDOUT log and only cpu check
+
+    cd $THISDIR ; pwd
+    filepp -DVERSION=$v collectd.conf.in > /opt/collectd-$v/etc/collectd.conf
     /opt/collectd-$v/sbin/collectd -t || exit 1
+    /opt/collectd-$v/sbin/collectd -T || exit 1
 done
   
 
